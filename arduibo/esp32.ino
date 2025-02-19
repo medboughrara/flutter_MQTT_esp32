@@ -1,20 +1,15 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 
-// Replace with your network credentials
-const char* ssid = "TT_76E0";
-const char* password = "9trao2b8zr";
-
-// Replace with your MQTT broker address and port
-const char* mqtt_server = "f2fa91f4.ala.dedicated.aws.emqxcloud.com";
-const int mqtt_port = 1883;
-
-// Replace with your MQTT broker credentials
-const char* mqtt_username = "123";  // <-- Add your username here
-const char* mqtt_password = "123";  // <-- Add your password here
+const char* ssid = "Orange-495D";
+const char* password = "65D5T8BFJB0";
+const char* mqtt_server = "192.168.1.158";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+#define LED_PIN_1 2
+#define LED_PIN_2 4
 
 void setup_wifi() {
   delay(10);
@@ -39,26 +34,30 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
-  for (unsigned int i = 0; i < length; i++) {
+  for (int i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
+
+  if ((char)payload[0] == '1') {
+    digitalWrite(LED_PIN_1, HIGH);
+    digitalWrite(LED_PIN_2, LOW);
+  } else if ((char)payload[0] == '2') {
+    digitalWrite(LED_PIN_1, LOW);
+    digitalWrite(LED_PIN_2, HIGH);
+  }
 }
 
 void reconnect() {
-  // Loop until we're reconnected
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
-    // Attempt to connect using credentials
-    if (client.connect("ESP32Client", mqtt_username, mqtt_password)) {
+    if (client.connect("ESP32Client")) {
       Serial.println("connected");
-      // Subscribe to the desired topic
-      client.subscribe("test/topic");
+      client.subscribe("led_topic");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
       delay(5000);
     }
   }
@@ -67,8 +66,11 @@ void reconnect() {
 void setup() {
   Serial.begin(115200);
   setup_wifi();
-  client.setServer(mqtt_server, mqtt_port);
+  client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
+
+  pinMode(LED_PIN_1, OUTPUT);
+  pinMode(LED_PIN_2, OUTPUT);
 }
 
 void loop() {
